@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CheapMaps</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e1e;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .custom-div-icon {
+            background: transparent;
+            border: none;
+        }
+
+        .marker-icon {
+            text-align: center;
+            color: #1e1e1e;
+            font-weight: 900;
+            border-radius: 50%;
+            line-height: 24px;
+            width: 24px !important;
+            height: 24px !important;
+            box-shadow: 0 0 15px currentColor;
+            display: inline-block;
+            border: 2px solid white;
+        }
+
+        .marker-start {
+            background-color: #00ff9d;
+            color: #00ff9d;
+            box-shadow: 0 0 15px #00ff9d;
+            color: black;
+        }
+
+        .marker-end {
+            background-color: #ff00ff;
+            color: #ff00ff;
+            box-shadow: 0 0 15px #ff00ff;
+            color: white;
+        }
+
+        .marker-stop {
+            background-color: #00d4ff;
+            color: #00d4ff;
+            box-shadow: 0 0 15px #00d4ff;
+            color: black;
+        }
+
+        .leaflet-overlay-pane path {
+            filter: drop-shadow(0 0 5px #00d4ff);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <script src="qwebchannel.js"></script>
+
+    <script>
+        // --- Map Initialization ---
+        var map = L.map('map', { zoomControl: false }).setView([46.0, 25.0], 6);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // --- Globals ---
+        var currentMarker = null;
+        var routeLayers = [];
+        var waypointMarkers = [];
+
+        var currentRoutesData = null; // Store for switching
+        var lastWaypointsInfo = null; // Store for redraw
+
+        var backend = null;
+
+        // --- QWebChannel Setup ---
+        if (typeof qt != 'undefined') {
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                backend = channel.objects.bridge;
+                console.log("Bridge connected:", backend);
+
+                // Debugging: Check for methods
+                if (backend) {
+                    console.log("Has mapClicked?", typeof backend.mapClicked);
+                    console.log("Has routeSelected?", typeof backend.routeSelected);
+                }
+            });
+        } else {
+            console.log("qt webChannelTransport not found - running in browser?");
+        }
+
+        // --- Interactions ---
+        map.on('click', function (e) {
+            if (backend && typeof backend.mapClicked === 'function') {
+                backend.mapClicked(e.latlng.lat, e.latlng.lng);
+            } else {
+                console.error("Backend not ready or mapClicked not found");
+            }
+        });
+
+        // --- Core Functions ---
+        function updateLocation(lat, lng, name) {
+            map.setView([lat, lng], 13);
+            clearMap(); // Clears previous stuff
+            currentMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(name)
+                .openPopup();
+        }
+
+        function drawRoute(routes, waypointsInfo) {
+            // Save for redraws
+            lastWaypointsInfo = waypointsInfo;
+            currentRoutesData = routes;
+
+            clearMap();
+
+            // 1. Draw Routes
+            if (routes && Array.isArray(routes)) {
+                // Reverse iterate so Primary (Index 0) is drawn LAST (on top)
+                for (var i = routes.length - 1; i >= 0; i--) {
+                    var route = routes[i];
+
+                    (function (index) {
+                        var isPrimary = (index === 0);
+                        var color = isPrimary ? '#00d4ff' : '#666666';
+                        var opacity = isPrimary ? 0.9 : 0.6;
+                        var weight = isPrimary ? 6 : 4;
+                        var dashArray = isPrimary ? null : '10, 10';
+
+                        var poly = L.polyline(route.coordinates, {
+                            color: color,
+                            weight: weight,
+                            opacity: opacity,
+                            lineCap: 'round',
+                            dashArray: dashArray
+                        }).addTo(map);
+
+                        // Click to switch
+                        poly.on('click', function (e) {
+                            L.DomEvent.stopPropagation(e);
+                            switchRoute(index);
+                        });
+
+                        routeLayers.push(poly);
+
+                        if (isPrimary) {
+                            map.fitBounds(poly.getBounds(), { padding: [50, 50] });
+                        }
+                    })(i);
+                }
+            }
+
+            // 2. Draw Waypoints
+            if (waypointsInfo && Array.isArray(waypointsInfo)) {
+                waypointsInfo.forEach(function (wp) {
+                    var iconHtml = '';
+                    var className = 'marker-icon ';
+
+                    if (wp.type === 'start') {
+                        className += 'marker-start';
+                        iconHtml = 'S';
+                    } else if (wp.type === 'end') {
+                        className += 'marker-end';
+                        iconHtml = 'F';
+                    } else {
+                        className += 'marker-stop';
+                        iconHtml = wp.index;
+                    }
+
+                    var icon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div class="${className}">${iconHtml}</div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+
+                    var m = L.marker([wp.lat, wp.lng], { icon: icon }).addTo(map).bindPopup(wp.name);
+                    waypointMarkers.push(m);
+                });
+            }
+        }
+
+        function switchRoute(newIndex) {
+            if (!currentRoutesData) return;
+
+            // Reorder global array: Move newIndex to 0
+            var selectedRoute = currentRoutesData[newIndex];
+            currentRoutesData.splice(newIndex, 1);
+            currentRoutesData.unshift(selectedRoute);
+
+            // Notify Python
+            if (backend && typeof backend.routeSelected === 'function') {
+                backend.routeSelected(newIndex);
+            } else {
+                console.error("Backend not ready or routeSelected missing");
+            }
+
+            // Redraw (using global vars)
+            clearMap();
+            // We pass parameters slightly differently or just reuse globals?
+            // drawRoute expects args, so pass them.
+            // Note: drawRoute updates globals again, which is fine.
+            drawRoute(currentRoutesData, lastWaypointsInfo);
+        }
+
+        function clearMap() {
+            if (currentMarker) map.removeLayer(currentMarker);
+
+            routeLayers.forEach(l => map.removeLayer(l));
+            routeLayers = [];
+
+            waypointMarkers.forEach(m => map.removeLayer(m));
+            waypointMarkers = [];
+        }
+    </script>
+</body>
+
+</html>
