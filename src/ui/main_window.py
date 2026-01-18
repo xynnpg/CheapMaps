@@ -15,6 +15,7 @@ from src.ui.weather_widget import WeatherWidget
 from src.ui.weather_widget import WeatherWidget
 from PyQt5.QtWidgets import QMenu, QAction
 import requests
+from src.utils.resource_path import get_resource_path
 
 class ReverseGeocodeWorker(QThread):
     result_ready = pyqtSignal(str, float, float)
@@ -232,8 +233,7 @@ class MainWindow(QMainWindow):
         self.channel.registerObject("bridge", self.bridge)
         self.web_view.page().setWebChannel(self.channel)
         
-        curr_dir = os.path.dirname(os.path.abspath(__file__))
-        map_path = os.path.join(curr_dir, '..', 'map_app.html')
+        map_path = get_resource_path('src/map_app.html')
         
         self.web_view.settings().setAttribute(self.web_view.settings().WebAttribute.LocalContentCanAccessRemoteUrls, True)
         self.web_view.settings().setAttribute(self.web_view.settings().WebAttribute.LocalContentCanAccessFileUrls, True)
