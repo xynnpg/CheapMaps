@@ -11,6 +11,7 @@ from src.utils.geocoder import Geocoder
 from src.ui.directions_panel import DirectionsPanel
 from src.utils.completer_helper import LocationCompleter
 from src.ui.bridge import MapBridge
+from src.ui.weather_widget import WeatherWidget
 import requests
 
 class ReverseGeocodeWorker(QThread):
@@ -287,6 +288,10 @@ class MainWindow(QMainWindow):
         # Stats Panel
         self.stats_panel = StatsPanel(central_widget)
 
+        # Weather Widget
+        self.weather_widget = WeatherWidget(central_widget)
+        # We'll position it in resizeEvent
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         # Position Stats Center Bottom
@@ -295,6 +300,13 @@ class MainWindow(QMainWindow):
         x = (self.width() - p_width) // 2
         y = self.height() - p_height - 60 
         self.stats_panel.setGeometry(x, y, p_width, p_height)
+
+        # Position Weather Widget Top Right
+        w_width = 160
+        w_height = 80
+        wx = self.width() - w_width - 20
+        wy = 20
+        self.weather_widget.setGeometry(wx, wy, w_width, w_height)
 
     def toggle_directions(self):
         is_directions = self.directions_toggle.isChecked()
@@ -334,6 +346,9 @@ class MainWindow(QMainWindow):
             name = result['display_name'].replace("'", "\\'") 
             js_code = f"updateLocation({lat}, {lon}, '{name}');"
             self.web_view.page().runJavaScript(js_code)
+            
+            # Update weather for searched location
+            self.weather_widget.fetch_weather(lat, lon, name)
         else:
             QMessageBox.warning(self, "Not Found", f"Could not find location: {query}")
 
@@ -429,7 +444,18 @@ class MainWindow(QMainWindow):
                 js_code = f"updateLocation({lat}, {lon}, '{name}');"
                 self.web_view.page().runJavaScript(js_code)
             
+            
             self.statusBar().showMessage(f"📍 {loc['display_name']}")
+            
+            # Fetch Weather
+            location_name = loc.get('display_name', "Current Location")
+            # Extract city if possible to keep it short
+            if ',' in location_name:
+                short_name = location_name.split(',')[0]
+            else:
+                short_name = location_name
+                
+            self.weather_widget.fetch_weather(lat, lon, short_name)
         else:
              self.statusBar().showMessage("⚠️ Location undetected.")
             
@@ -451,5 +477,11 @@ class MainWindow(QMainWindow):
             self.pending_input_widget.set_text(name)
             js_code = f"updateLocation({lat}, {lng}, '{name.replace('\'', '\\\'')}');"
             self.web_view.page().runJavaScript(js_code)
+            
+            # Update weather for picked location
+            # Use short name
+            short_name = name.split(',')[0] if ',' in name else name
+            self.weather_widget.fetch_weather(lat, lng, short_name)
+            
             self.statusBar().showMessage(f"✅ {name}")
             self.pending_input_widget = None
