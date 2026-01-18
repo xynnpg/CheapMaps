@@ -81,11 +81,37 @@
         // --- Map Initialization ---
         var map = L.map('map', { zoomControl: false }).setView([46.0, 25.0], 6);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        var currentLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
+
+        var layers = {
+            'dark': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            'light': 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            'satellite': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'terrain': 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+        };
+
+        function switchLayer(layerName) {
+            if (layers[layerName]) {
+                currentLayer.setUrl(layers[layerName]);
+            }
+        }
+
+        var layers = {
+            'dark': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            'light': 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            'satellite': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'terrain': 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+        };
+
+        function switchLayer(layerName) {
+            if (layers[layerName]) {
+                currentLayer.setUrl(layers[layerName]);
+            }
+        }
 
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -109,6 +135,7 @@
                 if (backend) {
                     console.log("Has mapClicked?", typeof backend.mapClicked);
                     console.log("Has routeSelected?", typeof backend.routeSelected);
+                    console.log("Has receiveMapCenter?", typeof backend.receiveMapCenter);
                 }
             });
         } else {
@@ -238,6 +265,7 @@
             waypointMarkers.forEach(m => map.removeLayer(m));
             waypointMarkers = [];
         }
+
     </script>
 </body>
 

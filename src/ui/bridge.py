@@ -15,3 +15,4 @@ class MapBridge(QObject):
     def routeSelected(self, index):
         print(f"Route selected: {index}")
         self.routeSelectedSignal.emit(index)
+

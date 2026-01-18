@@ -1,40 +1,36 @@
-# CheapMaps 🌑
+# CheapMaps
 
-CheapMaps este o aplicație desktop modernă de hărți și navigare, construită cu **Python (PyQt5)** și **Leaflet.js**. Oferă o interfață elegantă "Dark Mode" și funcționalități esențiale pentru planificarea rutelor gratuit, folosind servicii open-source.
+CheapMaps is a modern desktop navigation application built with Python (PyQt5) and Leaflet.js. It provides a sleek, dark-themed interface for route planning and location services, utilizing open-source data.
 
-## 🚀 Funcționalități
+## Features
 
-- **Hărți Interactive**: Navigare fluidă folosind hărți OpenStreetMap cu o temă întunecată (CartoDB Dark Matter).
-- **Căutare Locații**: Găsește rapid orașe, străzi și puncte de interes (folosind Nominatim).
-- **Planificare Rute**:
-  - Rută auto optimizată între mai multe puncte (OSRM).
-  - Suport pentru **Waypoints** (opriri intermediare).
-  - Reordonare ușoară a opririlor prin drag-and-drop (săgeți sus/jos).
-  - Afișare rute alternative.
-- **Rute "Rocket"**: Calcularea automată a celei mai rapide rute, afișând durata estimată și distanța.
-- **Locația Mea**: Detectare automată a locației aproximative pe bază de IP.
-- **Selectare de pe Hartă**: Click dreapta (sau buton dedicat) pentru a alege puncte direct de pe hartă.
-- **Interfață Modernă**: Design minimalist, dark-mode, cu elemente suprapuse elegant.
+- **Interactive Mapping**: seamless navigation using OpenStreetMap data with multiple layer options (Dark, Light, Satellite, Terrain).
+- **Location Search**: Quick search functionality for cities, streets, and points of interest.
+- **Route Planning**: Optimized driving routes with support for multiple waypoints and drag-and-drop reordering.
+- **Rocket Route**: Automatic calculation of the fastest route with distance and duration estimates.
+- **Weather Integration**: Real-time weather updates and 7-day detailed forecasts for any selected location.
+- **Geolocation**: Automatic detection of the current user location via IP-based services.
 
-## 🛠️ Tehnologii Folosite
+## Technology Stack
 
-- **Limbaj**: Python 3
+- **Language**: Python 3
 - **GUI Framework**: PyQt5 / PyQtWebEngine
-- **Hărți Web**: Leaflet.js
-- **Servicii API (Gratuite)**:
-  - *Geocoding*: OpenStreetMap Nominatim
-  - *Routing*: OSRM (Open Source Routing Machine)
-  - *IP Geolocation*: ip-api.com
+- **Maps**: Leaflet.js
+- **Services**:
+  - Geocoding: OpenStreetMap Nominatim
+  - Routing: OSRM (Open Source Routing Machine)
+  - Weather: Open-Meteo API
+  - Geolocation: ip-api
 
-## 📦 Instalare
+## Installation
 
-1.  **Clonează repository-ul:**
+1.  Clone the repository:
     ```bash
     git clone https://github.com/username/CheapMaps.git
     cd CheapMaps
     ```
 
-2.  **Creează un mediu virtual (recomandat):**
+2.  Create a virtual environment (Recommended):
     ```bash
     python -m venv venv
     # Windows
@@ -43,26 +39,26 @@ CheapMaps este o aplicație desktop modernă de hărți și navigare, construit�
     source venv/bin/activate
     ```
 
-3.  **Instalează dependențele:**
+3.  Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
 
-## ▶️ Utilizare
+## Usage
 
-Pornește aplicația rulând:
+Launch the application by running the main entry point:
 
 ```bash
 python src/main.py
 ```
 
-## 📝 Structură Proiect
+## Project Structure
 
-- `src/main.py`: Punctul de intrare în aplicație.
-- `src/map_app.html`: Interfața hărții (Leaflet).
-- `src/ui/`: Componentele interfeței grafice (Fereastra principală, Panou direcții).
-- `src/utils/`: Utilitare pentru Geocoding și completare automată.
+- `src/main.py`: Application entry point.
+- `src/map_app.html`: Leaflet map interface and JavaScript logic.
+- `src/ui/`: User Interface components (Main Window, Weather Widget, Panels).
+- `src/utils/`: Utility modules for Geocoding and Weather services.
 
-## ⚠️ Notă
+## Note
 
-Această aplicație folosește API-uri publice care pot avea limite de utilizare. Pentru utilizare intensivă, luați în considerare configurarea propriilor servere OSRM/Nominatim.
+This application utilizes public APIs which may have usage limits. For high-volume usage, consider hosting self-hosted instances of OSRM and Nominatim.

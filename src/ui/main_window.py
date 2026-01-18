@@ -12,6 +12,8 @@ from src.ui.directions_panel import DirectionsPanel
 from src.utils.completer_helper import LocationCompleter
 from src.ui.bridge import MapBridge
 from src.ui.weather_widget import WeatherWidget
+from src.ui.weather_widget import WeatherWidget
+from PyQt5.QtWidgets import QMenu, QAction
 import requests
 
 class ReverseGeocodeWorker(QThread):
@@ -223,6 +225,7 @@ class MainWindow(QMainWindow):
         # FIX: Register Channel BEFORE setting URL
         self.bridge = MapBridge()
         self.bridge.mapClickedSignal.connect(self.handle_map_click)
+        self.bridge.mapClickedSignal.connect(self.handle_map_click)
         self.bridge.routeSelectedSignal.connect(self.handle_route_selection)
         
         self.channel = QWebChannel()
@@ -240,7 +243,8 @@ class MainWindow(QMainWindow):
         
         # Controls
         self.control_panel = ControlPanel(central_widget)
-        self.control_panel.setGeometry(20, 20, 380, 80)
+        self.control_panel = ControlPanel(central_widget)
+        self.control_panel.setGeometry(20, 20, 380, 110)
         
         search_layout = QHBoxLayout()
         search_layout.setSpacing(8)
@@ -276,7 +280,33 @@ class MainWindow(QMainWindow):
         search_layout.addWidget(self.directions_toggle)
         search_layout.addWidget(self.loc_btn)
         
+        search_layout.addWidget(self.loc_btn)
+        
+        # --- Map Enhancement Controls ---
+        extras_layout = QHBoxLayout()
+        extras_layout.setSpacing(8)
+        
+        # Layers Menu
+        self.layer_btn = QPushButton("🗺️ Layers")
+        self.layer_btn.setStyleSheet("padding: 4px 8px; font-size: 12px;")
+        self.layer_menu = QMenu(self)
+        self.layer_menu.setStyleSheet("QMenu { background-color: #2b2b2b; color: white; border: 1px solid #444; } QMenu::item:selected { background-color: #007acc; }")
+        
+        layers = [("Dark", "dark"), ("Light", "light"), ("Satellite", "satellite"), ("Terrain", "terrain")]
+        for name, code in layers:
+            action = QAction(name, self)
+            action.triggered.connect(lambda checked, c=code: self.switch_map_layer(c))
+            self.layer_menu.addAction(action)
+            
+        self.layer_btn.setMenu(self.layer_menu)
+        
+        self.layer_btn.setMenu(self.layer_menu)
+        
+        extras_layout.addWidget(self.layer_btn)
+        extras_layout.addStretch()
+
         self.control_panel.layout.addLayout(search_layout)
+        self.control_panel.layout.addLayout(extras_layout)
         
         self.directions_panel = DirectionsPanel()
         self.directions_panel.go_signal.connect(self.get_directions)
@@ -326,6 +356,10 @@ class MainWindow(QMainWindow):
         self.control_panel.adjustSize()
         if self.control_panel.width() < 380:
              self.control_panel.resize(380, self.control_panel.height())
+
+    def switch_map_layer(self, layer_code):
+        js_code = f"switchLayer('{layer_code}');"
+        self.web_view.page().runJavaScript(js_code)
 
     def perform_search(self):
         if self.directions_toggle.isChecked():
